@@ -96,7 +96,7 @@ void loadDatabase(){
 		NSString *fullListPath = [@"/var/lib/dpkg/info/" stringByAppendingPathComponent:name];
 		NSString *rawList = [NSString stringWithContentsOfFile:fullListPath encoding:NSUTF8StringEncoding error:nil];
 		NSArray *files = [rawList componentsSeparatedByString:@"\n"];
-		for (NSString *file in files){	
+		for (NSString *file in files){
 			if ([file isEqualToString:BinsPath])
 				continue;
 			if ([file isEqualToString:LibsPath])

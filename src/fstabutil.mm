@@ -20,6 +20,7 @@ void editFsTab(){
 	NSMutableArray *mountPoints = [[fstab componentsSeparatedByString:@"\n"] mutableCopy];
 	BOOL editNeeded = NO;
 	NSUInteger idxToEdit = -1;
+
 	for (NSString *mountPoint in mountPoints){
 		if ([mountPoint rangeOfString:@" /private/var "].location == NSNotFound)
 			continue;
@@ -28,6 +29,7 @@ void editFsTab(){
 			idxToEdit = [mountPoints indexOfObject:mountPoint];
 		}
 	}
+
 	if (editNeeded){
 		copyFile(@"/etc/fstab",@"/etc/fstab.bak");
 		[mountPoints replaceObjectAtIndex:idxToEdit withObject:@"/dev/disk0s1s2 /private/var hfs rw,nodev 0 2"];

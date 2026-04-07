@@ -1,10 +1,10 @@
-Package: org.coolstar.StashApps
-Name: StashApps
-Depends: org.coolstar.cctools
-Version: 0.0.1
+Package: org.coolstar.stash933
+Name: Stashing for iOS 9.2 - 10.2.1
+Depends: firmware (>= 9.2), firmware (<= 10.2.1), org.coolstar.cctools
+Version: 1.5.2
+Conflicts: com.tigisoftware.filza (<= 3.1.0-16), org.coolstar.stash935
 Architecture: iphoneos-arm
-Description: An awesome tool of some sort!!
-Maintainer: CoolStar
-Author: CoolStar
+Description: Stash 3rd party components to make more space for them!
+Maintainer: CoolStar <coolstarorganization@gmail.com>
+Author: CoolStar <coolstarorganization@gmail.com>
 Section: System
-Tag: role::hacker
