@@ -298,6 +298,8 @@ void stashAppMain(){
 	for (NSString *app in apps){
 		if ([[app lowercaseString] isEqualToString:@"cydia.app"])
 			continue;
+		if ([[app lowercaseString] isEqualToString:@"zebra.app"])
+			continue;
 
 		NSString *appPath = [AppsPath stringByAppendingPathComponent:app];
 		NSString *infoPlistPath = [appPath stringByAppendingPathComponent:@"Info.plist"];

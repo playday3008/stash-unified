@@ -104,6 +104,11 @@ NSString *humanReadableFileSize(double convertedValue){
 }
 
 bool stashFile(NSString *origPath, NSString *stashPath){
+	if ([[NSFileManager defaultManager] fileExistsAtPath:stashPath]){
+		if (!deleteFile(stashPath, 1))
+			return false;
+	}
+
 	if (!copyFile(origPath, stashPath)){
 		return false;
 	}

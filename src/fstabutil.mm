@@ -14,12 +14,16 @@ BOOL checkMount(){
 }
 
 void editFsTab(){
-	if (kCFCoreFoundationVersionNumber != 1348.00 && kCFCoreFoundationVersionNumber != 1348.22)
-		return; //Only edit FSTab on iOS 10.0 - 10.2
+	if (kCFCoreFoundationVersionNumber < 1348.00 || kCFCoreFoundationVersionNumber > 1349.13)
+		return; //Only edit FSTab on iOS 10.0 - 10.2.1
+
 	NSString *fstab = [NSString stringWithContentsOfFile:@"/etc/fstab" encoding:NSASCIIStringEncoding error:nil];
+	if (!fstab)
+		return;
+
 	NSMutableArray *mountPoints = [[fstab componentsSeparatedByString:@"\n"] mutableCopy];
 	BOOL editNeeded = NO;
-	NSUInteger idxToEdit = -1;
+	NSUInteger idxToEdit = NSNotFound;
 
 	for (NSString *mountPoint in mountPoints){
 		if ([mountPoint rangeOfString:@" /private/var "].location == NSNotFound)
@@ -30,7 +34,7 @@ void editFsTab(){
 		}
 	}
 
-	if (editNeeded){
+	if (editNeeded && idxToEdit != NSNotFound){
 		copyFile(@"/etc/fstab",@"/etc/fstab.bak");
 		[mountPoints replaceObjectAtIndex:idxToEdit withObject:@"/dev/disk0s1s2 /private/var hfs rw,nodev 0 2"];
 		NSString *newFstab = [mountPoints componentsJoinedByString:@"\n"];

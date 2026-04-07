@@ -28,6 +28,7 @@ void loadDatabase(){
 		@"apt7-key",
 		@"cydia-lproj",
 		@"cydia",
+		@"xyz.willy.zebra",
 		@"darwintools",
 		@"debianutils",
 		@"org.thebigboss.repo.icons",

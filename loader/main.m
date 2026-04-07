@@ -13,6 +13,8 @@ int main(int argc, char **argv, char **envp) {
 
 		NSString *stashedExecutablePath = [stashedBundlePath stringByAppendingPathComponent:executableName];
 
+		NSLog(@"%@", stashedExecutablePath);
+
 		execv([stashedExecutablePath cStringUsingEncoding:NSASCIIStringEncoding], argv); //chainload the app executable from stash path
 	}
 	return 0;
