@@ -113,12 +113,48 @@ bool stashFile(NSString *origPath, NSString *stashPath){
 		return false;
 	}
 
-	if (!deleteFile(origPath, 1)){
+	// Atomic stash: create symlink at temp path, then rename over original.
+	// This avoids any window where the original path doesn't resolve.
+	NSString *tempLink = [origPath stringByAppendingString:@".stash-tmp"];
+
+	// Clean up leftover from a previous failed run
+	if ([[NSFileManager defaultManager] fileExistsAtPath:tempLink])
+		deleteFile(tempLink, 0);
+
+	if (!linkFile(stashPath, tempLink)){
 		return false;
 	}
 
-	if (!linkFile(stashPath, origPath)){
-		return false;
+	BOOL isDirectory = NO;
+	[[NSFileManager defaultManager] fileExistsAtPath:origPath isDirectory:&isDirectory];
+
+	if (!isDirectory) {
+		// Regular file: rename() atomically replaces file with symlink
+		if (rename([tempLink UTF8String], [origPath UTF8String]) != 0) {
+			printf("Error: Atomic rename failed for %s\n", [origPath UTF8String]);
+			deleteFile(tempLink, 0);
+			return false;
+		}
+	} else {
+		// Directory: can't rename a symlink over a directory, so rename
+		// the directory away first, then place the symlink.
+		NSString *oldPath = [origPath stringByAppendingString:@".stash-old"];
+		if ([[NSFileManager defaultManager] fileExistsAtPath:oldPath])
+			deleteFile(oldPath, 0);
+
+		if (rename([origPath UTF8String], [oldPath UTF8String]) != 0) {
+			printf("Error: Rename-away failed for %s\n", [origPath UTF8String]);
+			deleteFile(tempLink, 0);
+			return false;
+		}
+		if (rename([tempLink UTF8String], [origPath UTF8String]) != 0) {
+			printf("Error: Rename-in failed for %s\n", [origPath UTF8String]);
+			// Restore the original directory
+			rename([oldPath UTF8String], [origPath UTF8String]);
+			deleteFile(tempLink, 0);
+			return false;
+		}
+		deleteFile(oldPath, 0);
 	}
 	return true;
 }
