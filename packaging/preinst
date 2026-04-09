@@ -4,6 +4,13 @@ cydia=($CYDIA)
 
 echo "StashUnified Version 2.0.0"
 echo "Copyright 2016, CoolStar. Updated 2026, PlayDay."
+
+if [ ! -x /usr/libexec/cydia/move.sh ]; then
+	echo "Warning: /usr/libexec/cydia/move.sh not found, skipping directory stashing."
+	echo "  Install Cydia to enable stashing of preference bundles and toolchains."
+	exit 0
+fi
+
 echo "stashing preference bundles..."
 /usr/libexec/cydia/move.sh /Library/PreferenceBundles #Preference Bundles
 /usr/libexec/cydia/move.sh /Library/PreferenceLoader #Preference Bundles

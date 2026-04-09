@@ -37,7 +37,13 @@ void editFsTab(){
 
 	if (editNeeded && idxToEdit != NSNotFound){
 		copyFile(@"/etc/fstab",@"/etc/fstab.bak");
-		[mountPoints replaceObjectAtIndex:idxToEdit withObject:@"/dev/disk0s1s2 /private/var hfs rw,nodev 0 2"];
+		// Remove nosuid from the existing line rather than replacing it wholesale,
+		// so we don't assume a specific device/partition layout.
+		NSString *origLine = [mountPoints objectAtIndex:idxToEdit];
+		NSString *newLine = [origLine stringByReplacingOccurrencesOfString:@",nosuid" withString:@""];
+		newLine = [newLine stringByReplacingOccurrencesOfString:@"nosuid," withString:@""];
+		newLine = [newLine stringByReplacingOccurrencesOfString:@"nosuid" withString:@""];
+		[mountPoints replaceObjectAtIndex:idxToEdit withObject:newLine];
 		NSString *newFstab = [mountPoints componentsJoinedByString:@"\n"];
 		[newFstab writeToFile:@"/etc/fstab" atomically:YES encoding:NSASCIIStringEncoding error:nil];
 	}

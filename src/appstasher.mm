@@ -1,5 +1,6 @@
 #import "stashutils.h"
 #import "versions.h"
+#import <sys/stat.h>
 
 #define AppsPath @"/Applications/"
 #define AppsStash @"/var/stash/appsstash"
@@ -34,6 +35,26 @@ NSMutableArray *possibleIconFileNamesForFileName(NSString *fileName){
 	return possibleFileNames;
 }
 
+// Check if a binary is the loader stub by searching for the embedded signature.
+// The loader is tiny (< 64KB); any larger file is the real app executable.
+#import "../loader/signature.h"
+
+static bool hasLoaderSignature(NSString *path){
+	struct stat st;
+	if (stat([path UTF8String], &st) != 0 || st.st_size > 65536)
+		return false;
+
+	NSData *data = [NSData dataWithContentsOfFile:path];
+	if (!data)
+		return false;
+
+	static const char sig_bytes[] = LOADER_SIGNATURE;
+	NSData *sig = [NSData dataWithBytesNoCopy:(void *)sig_bytes
+	                                   length:sizeof(sig_bytes) - 1
+	                             freeWhenDone:NO];
+	return [data rangeOfData:sig options:0 range:NSMakeRange(0, [data length])].location != NSNotFound;
+}
+
 bool deStashAppExecutable(NSString *executablePath, NSString *stashedExecutablePath){
 	if (![[NSFileManager defaultManager] fileExistsAtPath:stashedExecutablePath])
 		return true;
@@ -58,10 +79,8 @@ bool stashAppExecutable(NSString *executablePath, NSString *stashedExecutablePat
 	}
 
 	// Already stashed via loader (iOS 9.2-10.2.1 path)
-	NSString *binaryStrings = outputFromCommand(@"/usr/bin/strings", @[executablePath]);
-	if ([binaryStrings rangeOfString:@"=======*=======*=======CSSTASHEDAPPEXECUTABLESIGNATURE=======*=======*======="].location != NSNotFound){
+	if (hasLoaderSignature(executablePath))
 		return true;
-	}
 
 	if ([[NSFileManager defaultManager] fileExistsAtPath:stashedExecutablePath]){
 		if (!deleteFile(stashedExecutablePath, 1))
@@ -121,8 +140,7 @@ bool handleCrashReporterQuirk(NSString *appPath, NSString *stashPath){
 
 bool handleTransmissionQuirk(NSString *executablePath, NSString *stashedExecutablePath){
 	NSFileManager *fileManager = [NSFileManager defaultManager];
-	NSString *binaryStrings = outputFromCommand(@"/usr/bin/strings", @[executablePath]);
-	if ([binaryStrings rangeOfString:@"=======*=======*=======CSSTASHEDAPPEXECUTABLESIGNATURE=======*=======*======="].location != NSNotFound){
+	if (hasLoaderSignature(executablePath) || isSymbolicLink(executablePath)){
 		if (![fileManager fileExistsAtPath:stashedExecutablePath]){
 			return false;
 		}
@@ -165,8 +183,16 @@ bool stashApp(NSString *appPath)
 
 	NSString *infoPlistPath = [appPath stringByAppendingPathComponent:@"Info.plist"];
 	NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:infoPlistPath];
+	if (!infoPlist){
+		printf("Error: Unable to parse Info.plist at %s\n", [infoPlistPath UTF8String]);
+		return false;
+	}
 
 	NSString *executableName = [infoPlist objectForKey:@"CFBundleExecutable"];
+	if (!executableName){
+		printf("Error: No CFBundleExecutable in %s\n", [infoPlistPath UTF8String]);
+		return false;
+	}
 	NSString *executablePath = [appPath stringByAppendingPathComponent:executableName];
 	NSString *stashedExecutablePath = [appStash stringByAppendingPathComponent:executableName];
 
@@ -280,6 +306,8 @@ bool stashApp(NSString *appPath)
 		deleteFile(stashedFilePath, 1);
 	}
 
+	// CrashReporter: de-stash problematic dylibs and skip executable stashing
+	// (its executable must remain on the root filesystem to function properly)
 	if ([[appName lowercaseString] isEqualToString:@"crashreporter.app"]){
 		if (handleCrashReporterQuirk(appPath, appStash))
 			return true;
@@ -320,11 +348,18 @@ void stashAppMain(){
 	printf("Please wait, scanning apps...\n");
 	NSFileManager *fileManager = [NSFileManager defaultManager];
 
+	// Package managers and other critical apps that must not be stashed
+	NSArray *appExcludeList = @[
+		@"cydia.app",
+		@"zebra.app",
+		@"sileo.app",
+		@"installer.app",
+		@"saily.app"
+	];
+
 	NSArray *apps = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:AppsPath error:nil];
 	for (NSString *app in apps){
-		if ([[app lowercaseString] isEqualToString:@"cydia.app"])
-			continue;
-		if ([[app lowercaseString] isEqualToString:@"zebra.app"])
+		if ([appExcludeList containsObject:[app lowercaseString]])
 			continue;
 
 		NSString *appPath = [AppsPath stringByAppendingPathComponent:app];
@@ -334,8 +369,10 @@ void stashAppMain(){
 			continue;
 
 		NSDictionary *infoPlist = [NSDictionary dictionaryWithContentsOfFile:infoPlistPath];
+		if (!infoPlist)
+			continue;
 		NSString *bundleId = [infoPlist objectForKey:@"CFBundleIdentifier"];
-		if ([bundleId hasPrefix:@"com.apple."])
+		if (!bundleId || [bundleId hasPrefix:@"com.apple."])
 			continue;
 
 		printf("Stashing %s\n",[appPath UTF8String]);

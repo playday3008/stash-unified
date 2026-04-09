@@ -113,6 +113,21 @@ bool stashFile(NSString *origPath, NSString *stashPath){
 		return false;
 	}
 
+	// Verify copy integrity for regular files (guards against partial writes
+	// on nearly-full filesystems — the exact scenario stashing targets)
+	{
+		struct stat origSt, stashSt;
+		if (stat([origPath UTF8String], &origSt) == 0 &&
+		    !S_ISDIR(origSt.st_mode) &&
+		    stat([stashPath UTF8String], &stashSt) == 0 &&
+		    origSt.st_size != stashSt.st_size) {
+			printf("Error: Size mismatch after copy for %s (%lld != %lld)\n",
+				[origPath UTF8String], (long long)origSt.st_size, (long long)stashSt.st_size);
+			deleteFile(stashPath, 0);
+			return false;
+		}
+	}
+
 	// Atomic stash: create symlink at temp path, then rename over original.
 	// This avoids any window where the original path doesn't resolve.
 	NSString *tempLink = [origPath stringByAppendingString:@".stash-tmp"];
@@ -159,6 +174,8 @@ bool stashFile(NSString *origPath, NSString *stashPath){
 	return true;
 }
 
+// Copy ownership and mode from the stashed file onto the symlink itself.
+// HFS+ on iOS honours symlink metadata for some access checks.
 bool copyPermissions(NSString *linkPath, NSString *stashPath){
 	if (![[NSFileManager defaultManager] fileExistsAtPath:linkPath])
 		return false;

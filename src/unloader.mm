@@ -106,11 +106,12 @@ void deStashApps(){
 				continue;
 
 			if (isSymbolicLink(origPath)){
-				// Standard stashed file/dir
+				// Stashed file/dir (symlink → stash); also covers iOS 10.3+
+				// executables that were symlinked instead of loader-replaced
 				deStashFile(origPath, stashedPath);
 			} else if ([fm fileExistsAtPath:stashedPath] && [fm fileExistsAtPath:origPath]){
-				// Executable replaced with loader stub on iOS 9.x-10.2.x
-				// (not a symlink), force-replace with real binary from stash
+				// iOS 9.x-10.2.x: executable was replaced with the loader
+				// stub (not a symlink), force-replace with real binary
 				deleteFile(origPath, 1);
 				if (copyFile(stashedPath, origPath))
 					deleteFile(stashedPath, 0);
