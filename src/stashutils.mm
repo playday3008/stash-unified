@@ -190,6 +190,13 @@ bool copyPermissions(NSString *linkPath, NSString *stashPath){
     return true;
 }
 
+bool isSetuidOrSetgid(NSString *path){
+	struct stat st;
+	if (stat([path UTF8String], &st) != 0)
+		return false;
+	return (st.st_mode & (S_ISUID | S_ISGID)) != 0;
+}
+
 bool fileNameIsOk(NSString *fileName){
 	if (!fileName)
 		return false;

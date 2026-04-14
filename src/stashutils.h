@@ -10,3 +10,6 @@ bool stashFile(NSString *origPath, NSString *stashPath);
 bool copyPermissions(NSString *linkPath, NSString *stashPath);
 bool fileNameIsOk(NSString *fileName);
 bool deStashFile(NSString *origPath, NSString *stashPath);
+bool isSetuidOrSetgid(NSString *path);
+bool varHasNosuid(void);
+bool tryRemoveNosuid(void);

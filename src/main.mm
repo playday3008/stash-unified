@@ -12,6 +12,7 @@ void stashAppMain();
 void stashBinLibMain();
 BOOL checkMount();
 void editFsTab();
+bool tryRemoveNosuid();
 
 int main(int argc, char **argv, char **envp) {
 	if (!IS_IOS_BETWEEN(iOS_9_2, iOS_MaxSupported)) {
@@ -33,8 +34,9 @@ int main(int argc, char **argv, char **envp) {
 	@autoreleasepool {
 		bool needsReboot = checkMount();
 		stashAppMain();
-		stashBinLibMain();
 		editFsTab();
+		tryRemoveNosuid();
+		stashBinLibMain();
 		if (needsReboot){
 			printf("Reboot Needed to update mount points...\n");
 			char *cydia_env = getenv("CYDIA");

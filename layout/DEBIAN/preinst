@@ -2,7 +2,7 @@
 declare -a cydia
 cydia=($CYDIA)
 
-echo "StashUnified Version 2.0.0"
+echo "StashUnified Version @STASH_VERSION@"
 echo "Copyright 2016, CoolStar. Updated 2026, PlayDay."
 
 if [ ! -x /usr/libexec/cydia/move.sh ]; then

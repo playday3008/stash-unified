@@ -342,7 +342,7 @@ bool isApp(NSString *appPath){
 }
 
 void stashAppMain(){
-	printf("StashUnified App Stasher Version 1.3.0\n");
+	printf("StashUnified App Stasher Version " STASH_VERSION "\n");
 	printf("Copyright 2016, CoolStar. Updated 2026, PlayDay.\n");
 
 	printf("Please wait, scanning apps...\n");

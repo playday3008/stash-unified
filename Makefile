@@ -1,13 +1,14 @@
 ARCHS = armv7 arm64
 TARGET = iphone:10.3:9.2
+STASH_VERSION = 2.1.0
 
 include $(THEOS)/makefiles/common.mk
 
 TOOL_NAME = StashApps Unloader
 StashApps_FILES = src/main.mm src/stashutils.mm src/appstasher.mm src/binlibstasher.mm src/fstabutil.mm
-StashApps_CFLAGS = -Wall
+StashApps_CFLAGS = -Wall -DSTASH_VERSION=\"$(STASH_VERSION)\"
 Unloader_FILES = src/unloader.mm src/stashutils.mm
-Unloader_CFLAGS = -Wall
+Unloader_CFLAGS = -Wall -DSTASH_VERSION=\"$(STASH_VERSION)\"
 
 include $(THEOS_MAKE_PATH)/tool.mk
 
@@ -31,7 +32,7 @@ after-stage::
 		-output $(THEOS_STAGING_DIR)/usr/local/bin/CSStashedAppExecutable.tmp
 	mv $(THEOS_STAGING_DIR)/usr/local/bin/CSStashedAppExecutable.tmp \
 		$(THEOS_STAGING_DIR)/usr/local/bin/CSStashedAppExecutable
-	@# Copy remaining DEBIAN scripts
-	cp packaging/preinst $(THEOS_STAGING_DIR)/DEBIAN/preinst
-	cp packaging/triggers $(THEOS_STAGING_DIR)/DEBIAN/triggers
+	@# Copy DEBIAN scripts from layout and stamp version into preinst
+	cp layout/DEBIAN/triggers $(THEOS_STAGING_DIR)/DEBIAN/triggers
+	sed 's/@STASH_VERSION@/$(STASH_VERSION)/g' layout/DEBIAN/preinst > $(THEOS_STAGING_DIR)/DEBIAN/preinst
 	chmod 755 $(THEOS_STAGING_DIR)/DEBIAN/preinst

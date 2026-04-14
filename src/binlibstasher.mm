@@ -131,12 +131,16 @@ void loadDatabase(){
 }
 
 void stashBinLibMain(){
-	printf("StashUnified CLI Tool/Library Stasher Version 1.1\n");
+	printf("StashUnified Bin/Lib Stasher Version " STASH_VERSION "\n");
 	printf("Copyright 2016, CoolStar. Updated 2026, PlayDay.\n");
 
 	printf("Please wait, reading database...\n");
 
 	loadDatabase();
+
+	bool nosuidActive = varHasNosuid();
+	if (nosuidActive)
+		printf("Note: /private/var has nosuid — setuid/setgid binaries will be skipped.\n");
 
 	NSFileManager *fileManager = [NSFileManager defaultManager];
 
@@ -151,6 +155,12 @@ void stashBinLibMain(){
 	for (NSString *filePath in binFileNames){
 		if (isSymbolicLink(filePath))
 			continue;
+
+		if (nosuidActive && isSetuidOrSetgid(filePath)){
+			printf("Skipping setuid/setgid bin: %s (nosuid on /var)\n",
+				[[filePath lastPathComponent] UTF8String]);
+			continue;
+		}
 
 		NSString *fileName = [filePath lastPathComponent];
 
@@ -190,6 +200,12 @@ void stashBinLibMain(){
 	for (NSString *filePath in libFileNames){
 		if (isSymbolicLink(filePath))
 			continue;
+
+		if (nosuidActive && isSetuidOrSetgid(filePath)){
+			printf("Skipping setuid/setgid lib: %s (nosuid on /var)\n",
+				[[filePath lastPathComponent] UTF8String]);
+			continue;
+		}
 
 		NSString *fileName = [filePath lastPathComponent];
 
